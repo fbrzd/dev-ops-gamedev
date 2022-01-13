@@ -1,0 +1,8 @@
+client_config_backend: file
+client_config:
+  client_id: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+  client_secret: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+save_credentials: True
+save_credentials_backend: file
+save_credentials_file: credentials.json

@@ -1,0 +1,18 @@
+{
+    "project": "",
+    
+    "path-unity":"",
+    "path-project": "",
+    "path-build": "",
+    
+    "itchio": {
+        "user": "",
+        "game": ""
+    },
+    "drive": {
+        "ids_remotes": {
+            "linux": "",
+            "windows": ""
+        }
+    }
+}
