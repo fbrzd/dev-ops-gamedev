@@ -1,4 +1,4 @@
-/scrap-analytics/data/*
-/devops/*.json
-/devops/settings.yml
-/test-form.py
+scrap-analytics/data/*
+test-form.py
+devops/settings.yml
+devops/*.json
