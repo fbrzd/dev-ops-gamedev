@@ -123,14 +123,7 @@ def read_config():
     return data
 
 milestones = {
-    (datetime(2021, 2, 22), "public launch 0.1.0"),
-    (datetime(2021, 3, 11), "update version 0.1.1"),
-    (datetime(2021, 3, 24), "update version 0.2.0"),
-    (datetime(2021, 4, 12), "update version 0.2.1"),
-    (datetime(2021, 4, 28), "update version 0.2.2"),
-    (datetime(2021, 6, 23), "update version 0.3.0"),
-    (datetime(2021, 8, 16), "update version 0.3.1"),
-    (datetime(2021, 10, 23), "update version 0.3.2")
+    
 }
 
 DAY_ONE = datetime(2021, 2, 22)

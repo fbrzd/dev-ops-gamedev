@@ -14,6 +14,17 @@ class Builder
         
         if (plataform == "webgl") buildPlayerOptions.target = BuildTarget.WebGL;
         else if (plataform == "linux") buildPlayerOptions.target = BuildTarget.StandaloneLinux64;
+        else if (plataform == "android" || plataform == "google"){
+            buildPlayerOptions.target = BuildTarget.Android;
+            EditorUserBuildSettings.buildAppBundle = plataform == "google";
+            AndroidArchitecture aac = plataform == "android"? AndroidArchitecture.ARMv7: (AndroidArchitecture.ARM64 | AndroidArchitecture.ARMv7);
+            PlayerSettings.Android.targetArchitectures = aac;
+
+            PlayerSettings.Android.keystoreName = "/directory/to/user.keystore";
+            PlayerSettings.Android.keystorePass = "";
+            PlayerSettings.Android.keyaliasName = "";
+            PlayerSettings.Android.keyaliasPass = "";
+        }
         else buildPlayerOptions.target = BuildTarget.StandaloneWindows64;
         
         BuildPipeline.BuildPlayer(buildPlayerOptions);

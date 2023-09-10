@@ -1,8 +1,10 @@
-from os import path, system, listdir, walk
+from os import path, system, listdir, walk, environ
 from sys import argv
 from pydrive.auth import GoogleAuth
 from pydrive.drive import GoogleDrive
+from googleapiclient.discovery import build as gbuild
 from zipfile import ZipFile, ZIP_DEFLATED
+import json
 
 def setconfig():
     with open("config.json") as f:
@@ -17,6 +19,8 @@ def build(version, plataform):
 
     if plataform == "linux": path_build += ".x86_64"
     elif plataform == "windows": path_build += ".exe"
+    elif plataform == "android": path_build += ".apk"
+    elif plataform == "google": path_build += ".aab"
     
     command_build = f"{path_unity} -projectPath {path_project} -quit -batchmode -nographics -logFile {path_log} -executeMethod Builder.Build {plataform} {path_build}"
     system(command_build)
@@ -35,14 +39,53 @@ def compress(version, plataform):
 
 
 def deploy_prod(version, plataform):
-    namefile = f"{CONFIG['path-build']}/{version}/{plataform}/{CONFIG['project']}-{plataform}.zip"
-    dict_tags = {
-        "linux":"linux",
-        "windows":"windows",
-        "webgl": "html5"
-    }
-    cmd = f"butler push --userversion {version} {namefile} {CONFIG['itchio']['user']}/{CONFIG['itchio']['game']}:{dict_tags[plataform]}"
-    system(cmd)
+    if plataform == "google": google_deploy(f"{CONFIG['path-build']}/{version}/{plataform}/{CONFIG['project']}.aab")
+    elif plataform == "android": namefile = f"{CONFIG['path-build']}/{version}/{plataform}/{CONFIG['project']}.apk"
+    else: namefile = f"{CONFIG['path-build']}/{version}/{plataform}/{CONFIG['project']}-{plataform}.zip"
+    
+    if plataform != "google":
+        dict_tags = {
+            "linux":"linux",
+            "windows":"windows",
+            "webgl": "html5",
+            "android": "android"
+        }
+        cmd = f"butler push --userversion {version} {namefile} {CONFIG['itchio']['user']}/{CONFIG['itchio']['game']}:{dict_tags[plataform]}"
+        system(cmd)
+
+def google_deploy(filename):
+    # parameters
+    service = gbuild('androidpublisher', 'v3')
+    PACKAGE = "com.FBRZD.Chibits"
+    
+    # crate edit
+    edit = service.edits()
+    r = edit.insert(packageName=PACKAGE).execute()
+    id_edit = r["id"]
+    print(r)
+    
+    # upload .aab
+    r_aab = edit.bundles().upload(
+        packageName=PACKAGE,
+        editId=id_edit,
+        ackBundleInstallationWarning=False,
+        media_body=filename,
+        media_mime_type="application/octet-stream").execute()
+    
+    # update track
+    with open("track-template.json") as f:
+        tmp = json.load(f)
+    tmp["releases"][0]["versionCodes"].append(str(r_aab["versionCode"]))
+
+    r_track = edit.tracks().update(
+        packageName=PACKAGE,
+        editId=id_edit,
+        track="production",
+        body=tmp).execute()
+    
+    # validate & commit
+    r_val = edit.validate(packageName=PACKAGE, editId=id_edit).execute()
+    r_com = edit.commit(packageName=PACKAGE, editId=id_edit).execute()
 
 def deploy_test(version, plataform):
     ids_remotes = CONFIG['drive']['ids_remotes']
@@ -53,7 +96,11 @@ def deploy_test(version, plataform):
     
     # update file
     f = drive.CreateFile({'id': ids_remotes[plataform]})
-    path_zip = f"{CONFIG['path-build']}/{version}/{plataform}/{CONFIG['project']}-{plataform}.zip"
+    
+    if plataform == "android": path_zip = f"{CONFIG['path-build']}/{version}/{plataform}/{CONFIG['project']}.apk"
+    elif plataform == "google": path_zip = f"{CONFIG['path-build']}/{version}/{plataform}/{CONFIG['project']}.aab"
+    else: path_zip = f"{CONFIG['path-build']}/{version}/{plataform}/{CONFIG['project']}-{plataform}.zip"
+    
     f.SetContentFile(path_zip)
     f.Upload()
 
@@ -76,5 +123,6 @@ if '-deploy-test' in argv: # drive
     print(f"{PLATAFORM}-{VERSION} deploy-test done")
 
 if '-deploy-prod' in argv: # itchio
+    #service = build('androidpublisher', 'v3')
     deploy_prod(VERSION, PLATAFORM)
     print(f"{PLATAFORM}-{VERSION} deploy-prod done")
