@@ -7,5 +7,9 @@
         "username": "",
         "password": "",
         "id_game": ""
-    }
+    },
+    "milestones":[
+
+    ],
+    "dayone": "yyyy-mm-dd"
 }

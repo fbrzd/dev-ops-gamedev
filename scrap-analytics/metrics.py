@@ -1,10 +1,9 @@
-#from os import system,listdir
 import pandas as pd
-from datetime import datetime,date
+from datetime import datetime, date, timedelta
 from sys import argv
 import matplotlib.pyplot as plt
 import json
-from os import path
+from pathlib import Path
 
 # stores
 import module_google
@@ -79,23 +78,20 @@ def join_metrics_stores(list_summaries, stores):
     data_dict = dict()
     for index, row in df_main.iterrows():
         try:
+            date1 = DAY_ONE + timedelta(days=DAYS_GROUP*index) 
+            date2 = DAY_ONE + timedelta(days=DAYS_GROUP*(index+1))
             row = format_week_metric(row, df_main.loc[index-1] if index > min_week else row, df_main.columns)
-            print(f"# {index - min_week + 1}\t{row}\t\t{search_milestones(index)}")
+            print(f"# {index - min_week + 1}\t{row}\t\t{search_milestones2(date1, date2)}")
         except:
             print(f"# {index - min_week +1} row error")
     
     print("\033[1m" + 'total\t'+'\t\t'.join(calculate_footer(df_main)) + "\033[0m") # TODO: bold
-    #print(f"\n* from \033[1m{min(df['Date'].dt.strftime('%Y-%m-%d'))}\033[0m to \033[1m{max(df['Date'].dt.strftime('%Y-%m-%d'))}\033[0m")
-
-# OUTPUT OPTION 2
-def add_metrics_store(store_prefix, store_summary):
-    pass
-
+    
 # milestones
-def search_milestones(week):
-    list_notes = []
-    for w,n in milestones:
-        if week == w: list_notes.append(n)
+def search_milestones2(dt1, dt2):
+    list_notes = list()
+    for t,n in milestones:
+        if dt1 <= t < dt2: list_notes.append(n)
     return ', '.join(list_notes)
 
 def graphics(list_summaries, stores, col='downloads'):
@@ -118,30 +114,28 @@ def graphics(list_summaries, stores, col='downloads'):
     plt.show()
 
 def read_config():
-    with open(f"{PATH_LOCAL}/config.json") as f:
+    with open(PATH_LOCAL / "config.json") as f:
         data = json.load(f)
     return data
 
-milestones = {
-    
-}
-
-DAY_ONE = datetime(2021, 2, 22)
-milestones = set(map(lambda d: ((d[0] - DAY_ONE).days//7, d[1]), milestones))
-module_google.DAY_ONE = DAY_ONE
-module_itchio.DAY_ONE = DAY_ONE
-
+# init
 flagGoogle = '-g' in argv
 flagItchio = '-i' in argv
 stores_used = list()
-PATH_LOCAL = path.dirname(__file__)
+PATH_LOCAL = Path(__file__).parent
+DAYS_GROUP = int(argv[argv.index('-group')+1]) if '-group' in argv else 7
 
 # config
 config = read_config()
+milestones = list(map(lambda x: (datetime.strptime(x[0], "%Y-%m-%d"), x[1]), config["milestones"]))
+DAY_ONE = datetime.strptime(config["dayone"], "%Y-%m-%d")
+module_google.DAY_ONE = DAY_ONE
+module_itchio.DAY_ONE = DAY_ONE
+
 if flagGoogle: module_google.setconfig(config["google"]["id_dev"], config["google"]["app"])
 if flagItchio: module_itchio.setconfig(config["itchio"]["username"], config["itchio"]["password"], config["itchio"]["id_game"])
 
-# refresh some yearmonth metric
+# refresh some year-month metric
 if '-download' in argv:
     if flagGoogle:
         module_google.download_yearmonth(argv[argv.index('-download') + 1])
@@ -150,15 +144,22 @@ if '-download' in argv:
 
 list_summaries = list()
 if flagGoogle:
-    list_summaries.append(module_google.get_summary())
+    list_summaries.append(module_google.get_summary(DAYS_GROUP))
     stores_used.append('g')
 
 if flagItchio:
-    list_summaries.append(module_itchio.get_summary())
+    list_summaries.append(module_itchio.get_summary(DAYS_GROUP))
     stores_used.append('i')
 
 # show
-join_metrics_stores(list_summaries, stores_used)
+if '-noshow' not in argv: join_metrics_stores(list_summaries, stores_used)
+
+if '-report' in argv:
+    str_report = datetime.now().strftime("%Y-%m-%d") + '\n'
+    if flagGoogle: str_report += f"\n{module_google.get_lastweek_report()}\n"
+    if flagItchio: str_report += f"\n{module_itchio.get_lastweek_report()}\n"
+
+    with open(PATH_LOCAL / "report.txt", 'w') as f: f.write(str_report)
 
 if '-graph' in argv:
     graphics(list_summaries, stores_used, argv[argv.index('-graph') + 1])
