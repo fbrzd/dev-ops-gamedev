@@ -32,7 +32,10 @@ def download_yearmonth(date):
         # create df
         dt_v = pd.DataFrame(map(lambda x: (x['date'], x['count']), raw_data['views']), columns=['Date', 'Views'])
         dt_d = pd.DataFrame(map(lambda x: (x['date'], x['count']), raw_data['downloads']), columns=['Date','Downloads'])
+        dt_p = pd.DataFrame(map(lambda x: (x['date'], x['count']), raw_data['plays']), columns=['Date','Plays'])
+        
         df_cur = pd.merge(dt_v, dt_d, on="Date", how="outer")
+        df_cur = pd.merge(df_cur, dt_p, on="Date", how="outer")
         df_cur.loc[:, df_cur.columns != 'Date'] = df_cur.loc[:, df_cur.columns != 'Date'].fillna(0).astype(int)
         df_cur["Date"] = pd.to_datetime(df_cur["Date"], format="%Y/%m/%d")
         df_cur.sort_values(by="Date", inplace=True)
@@ -40,7 +43,7 @@ def download_yearmonth(date):
         # -------------------- TEMPORAL
         with open(PATH_LOCAL / 'data/itchio/last_summary.csv') as f: # PATH ISSUE
             df_local = pd.read_csv(f, parse_dates=[0])
-            df_main = df_local.merge(df_cur, on=['Date',"Views","Downloads"], how='outer')
+            df_main = df_local.merge(df_cur, on=['Date',"Views","Downloads", "Plays"], how='outer')
         df_main.to_csv(PATH_LOCAL / 'data/itchio/last_summary.csv', index=False)
         return df_main
         # -------------------- TEMPORAL
@@ -72,10 +75,12 @@ def sum_over_week(row):
     if week not in summary:
         summary[week] = [
             0, # views
-            0 # downloads
+            0, # downloads
+            0 # plays
         ]
     summary[week][0] += row["Views"]
     summary[week][1] += row["Downloads"]
+    summary[week][2] += row["Plays"]
 
 def sum_over_days(row, groupDays):
     global summary # need global because lambda
@@ -83,17 +88,22 @@ def sum_over_days(row, groupDays):
     if group not in summary:
         summary[group] = [
             0, # views
-            0 # downloads
+            0, # downloads,
+            0 # plays
         ]
     summary[group][0] += row["Views"]
     summary[group][1] += row["Downloads"]
+    try:
+        summary[group][2] += row["Plays"]
+    except:
+        pass
 
 def get_summary(groupDays=7):
     # prepare data
     df = merge_custom_summary()
     # sum by week
     df.apply(lambda row: sum_over_days(row, groupDays), axis=1)
-    return pd.DataFrame.from_dict(summary, orient='index', columns=['views','downloads'])
+    return pd.DataFrame.from_dict(summary, orient='index', columns=['views','downloads', 'plays'])
 
 def setconfig(username, password, id_game):
     global PAYLOAD
