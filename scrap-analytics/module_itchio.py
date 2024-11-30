@@ -63,9 +63,12 @@ def merge_custom_summary():
             dt_summary.append(pd.read_csv(f, parse_dates=[0])) # views, downloads
     
     # merge
+    # 502 - 503
     dt_summary = pd.concat(dt_summary)
-    dt_summary.sort_values(by="Date", inplace=True)
-    dt_summary.to_csv(PATH_LOCAL / 'data/itchio/last_summary.csv', index=False)
+    dt_summary.sort_values(by=["Date", "Views"], ascending=[True, False], inplace=True)
+    dt_summary = dt_summary.drop_duplicates(subset="Date", keep="first")
+
+    #dt_summary.to_csv(PATH_LOCAL / 'data/itchio/last_summary.csv', index=False)
     return dt_summary
 
 # create summary

@@ -45,7 +45,7 @@ def join_metrics_stores2(list_summaries, stores):
 
 
 def calculate_header(list_summaries, stores):
-    all_posible = ['views','downloads','uninstalls','updates','users']
+    all_posible = ['views','downloads','uninstalls','updates','users', 'plays']
     final_columns = ['week']
     for col in all_posible:
         stores_parentesis = []
@@ -71,7 +71,7 @@ def join_metrics_stores(list_summaries, stores):
         df_main["views"] = df_main.pop("views").sum(axis=1)
         df_main["downloads"] = df_main.pop("downloads").sum(axis=1)
     df_main = df_main.fillna(0).astype(int)
-    df_main = df_main[filter(lambda x: x in df_main.columns, ('views','downloads','uninstalls','updates','users'))]
+    df_main = df_main[filter(lambda x: x in df_main.columns, ('views','downloads','uninstalls','updates','users', 'plays'))]
 
     # show data
     min_week = min(df_main.index)
